@@ -1,164 +1,457 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../../core/l10n/app_localizations.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_scaffold.dart';
 import '../../../state/expense_provider.dart';
 import '../../../state/product_provider.dart';
 
-class ReportsScreen extends StatelessWidget {
+class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
+
+  @override
+  State<ReportsScreen> createState() => _ReportsScreenState();
+}
+
+class _ReportsScreenState extends State<ReportsScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = (String key) => AppLocalizations.tr(context, key);
+
+    return AppScaffold(
+      title: t('reports'),
+      body: Column(
+        children: [
+          // ── Custom Tab Bar ──
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryContainer,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              indicator: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(11),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              labelColor: AppTheme.primary,
+              unselectedLabelColor: AppTheme.accent,
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+              tabs: [
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.inventory_2_outlined, size: 18),
+                      const SizedBox(width: 8),
+                      Text(t('stockReport')),
+                    ],
+                  ),
+                ),
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.receipt_long_rounded, size: 18),
+                      const SizedBox(width: 8),
+                      Text(t('expenseReport')),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Tab Views ──
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: const [
+                _StockReportView(),
+                _ExpenseReportView(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StockReportView extends StatelessWidget {
+  const _StockReportView();
 
   @override
   Widget build(BuildContext context) {
     final t = (String key) => AppLocalizations.tr(context, key);
     final products = context.watch<ProductProvider>().products;
+    
+    // Calculate totals
+    final totalStockValue = products.fold(
+        0.0, (sum, item) => sum + (item.stock * item.purchasePrice));
+    final lowStockCount = products.where((p) => p.isLowStock).length;
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // ── Summary Cards ──
+        Row(
+          children: [
+            Expanded(
+              child: _buildSummaryCard(
+                title: t('stockValue'),
+                value: totalStockValue.toStringAsFixed(0),
+                icon: Icons.monetization_on_outlined,
+                color: AppTheme.primary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildSummaryCard(
+                title: t('lowStock'),
+                value: lowStockCount.toString(),
+                icon: Icons.warning_amber_rounded,
+                color: AppTheme.warning,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+
+        // ── Products List Header ──
+        Text(
+          t('products'),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: AppTheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 12),
+
+        if (products.isEmpty)
+          _buildEmptyState(t('noProductsYet'))
+        else
+          ...products.map((product) => Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.inventory_2_outlined,
+                        color: AppTheme.primary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            product.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          if (product.sku != null)
+                            Text(
+                              'SKU: ${product.sku}',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 12,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '${t('stock')}: ${product.stock}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: product.isLowStock
+                                ? AppTheme.error
+                                : AppTheme.primary,
+                          ),
+                        ),
+                        Text(
+                          (product.stock * product.purchasePrice).toStringAsFixed(0),
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              )),
+      ],
+    );
+  }
+
+  Widget _buildSummaryCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.05),
+            offset: const Offset(0, 4),
+            blurRadius: 12,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1E293B),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        child: Column(
+          children: [
+            Icon(Icons.inbox_outlined, size: 48, color: Colors.grey[300]),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: TextStyle(color: Colors.grey[500]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ExpenseReportView extends StatelessWidget {
+  const _ExpenseReportView();
+
+  @override
+  Widget build(BuildContext context) {
+    final t = (String key) => AppLocalizations.tr(context, key);
     final expenses = context.watch<ExpenseProvider>().expenses;
     final totalExpenses = context.watch<ExpenseProvider>().totalExpenses;
 
-    return AppScaffold(
-      title: t('reports'),
-      body: DefaultTabController(
-        length: 2,
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // ── Summary Card ──
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [AppTheme.primary, Color(0xFF2B6CB0)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primary.withValues(alpha: 0.3),
+                offset: const Offset(0, 8),
+                blurRadius: 16,
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Text(
+                t('monthExpenses'),
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                totalExpenses.toStringAsFixed(0),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // ── Expense List Header ──
+        Text(
+          t('history'),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: AppTheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 12),
+
+        if (expenses.isEmpty)
+          _buildEmptyState(t('noExpensesYet'))
+        else
+          ...expenses.take(50).map((expense) => Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppTheme.error.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.receipt_long,
+                        color: AppTheme.error,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            expense.description,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          if (expense.employeeName != null)
+                            Text(
+                              expense.employeeName!,
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 12,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '${expense.amount.toStringAsFixed(0)} ${expense.currency}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1E293B),
+                          ),
+                        ),
+                        Text(
+                          '${expense.date.day}/${expense.date.month}',
+                          style: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              )),
+      ],
+    );
+  }
+
+  Widget _buildEmptyState(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40),
         child: Column(
           children: [
-            TabBar(
-              tabs: [
-                Tab(text: t('stockReport')),
-                Tab(text: t('expenseReport')),
-              ],
-            ),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  ListView(
-                    padding: const EdgeInsets.all(12),
-                    children: [
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                t('stockReport'),
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                              const SizedBox(height: 8),
-                              if (products.isEmpty)
-                                Text(
-                                  t('noProductsYet'),
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                )
-                              else
-                                Table(
-                                  columnWidths: const {
-                                    0: FlexColumnWidth(2),
-                                    1: FlexColumnWidth(1),
-                                    2: FlexColumnWidth(1),
-                                  },
-                                  children: [
-                                    TableRow(
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.only(bottom: 6),
-                                          child: Text(
-                                            t('products'),
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 13),
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.only(bottom: 6),
-                                          child: Text(
-                                            t('currentStock'),
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 13),
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.only(bottom: 6),
-                                          child: Text(
-                                            t('stockValue'),
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 13),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    ...products.map(
-                                      (p) => TableRow(
-                                        children: [
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                                bottom: 6),
-                                            child: Text(p.name, style: const TextStyle(fontSize: 13)),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                                bottom: 6),
-                                            child: Text('${p.stock}', style: const TextStyle(fontSize: 13)),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                                bottom: 6),
-                                            child: Text(
-                                              (p.stock * p.purchasePrice)
-                                                  .toStringAsFixed(0),
-                                              style: const TextStyle(fontSize: 13),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  ListView(
-                    padding: const EdgeInsets.all(12),
-                    children: [
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                t('expenseReport'),
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                '${t('monthExpenses')}: ${totalExpenses.toStringAsFixed(0)}',
-                                style: Theme.of(context).textTheme.titleSmall,
-                              ),
-                              if (expenses.isNotEmpty) ...[
-                                const SizedBox(height: 12),
-                                ...expenses.take(20).map(
-                                      (e) => ListTile(
-                                        title: Text(e.description),
-                                        subtitle: Text(e.employeeName ?? '—'),
-                                        trailing: Text(
-                                          '${e.amount.toStringAsFixed(0)} ${e.currency}',
-                                        ),
-                                      ),
-                                    ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            Icon(Icons.inbox_outlined, size: 48, color: Colors.grey[300]),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: TextStyle(color: Colors.grey[500]),
             ),
           ],
         ),

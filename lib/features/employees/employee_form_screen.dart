@@ -360,7 +360,7 @@ class _EmployeeFormScreenState extends State<EmployeeFormScreen> {
                   : null,
               child: _profileImagePath == null
                   ? Icon(Icons.person, size: 48,
-                      color: AppTheme.primary.withOpacity(0.5))
+                      color: AppTheme.primary.withValues(alpha: 0.5))
                   : null,
             ),
             Positioned(

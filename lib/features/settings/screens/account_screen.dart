@@ -88,6 +88,82 @@ class AccountScreen extends StatelessWidget {
               ],
             ),
           ),
+          
+          const SizedBox(height: 32),
+          
+          // Delete Account Button
+          Material(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            child: ListTile(
+              onTap: () => _showDeleteConfirmation(context, t),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.error.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.delete_forever_rounded,
+                  color: AppTheme.error,
+                  size: 20,
+                ),
+              ),
+              title: Text(
+                t('deleteAccount'),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.error,
+                  fontSize: 14,
+                ),
+              ),
+              trailing: const Icon(
+                Icons.chevron_right_rounded,
+                size: 20,
+                color: Color(0xFF94A3B8),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context, String Function(String) t) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(t('deleteAccount')),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: Text('${t('deleteAccountConfirmation')}\n\n${t('deleteAccountWarning')}'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              t('cancel'),
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Implement actual deletion logic here
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Account deletion requested'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            child: Text(
+              t('deleteAccountAction'),
+              style: const TextStyle(
+                color: AppTheme.error,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
         ],
       ),
     );

@@ -116,8 +116,8 @@ class _EmployeeCard extends StatelessWidget {
                               horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: employee.isActive
-                                ? AppTheme.success.withOpacity(0.1)
-                                : Colors.grey.withOpacity(0.1),
+                                ? AppTheme.success.withValues(alpha: 0.1)
+                                : Colors.grey.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(

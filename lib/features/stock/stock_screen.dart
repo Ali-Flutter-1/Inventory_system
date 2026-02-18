@@ -57,7 +57,7 @@ class _StockScreenState extends State<StockScreen>
                 borderRadius: BorderRadius.circular(11),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
+                    color: Colors.black.withValues(alpha: 0.06),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -382,7 +382,7 @@ class _StockFormState extends State<_StockForm> {
             ),
             child: product.imagePath == null
                 ? Icon(Icons.inventory_2_outlined,
-                    color: AppTheme.primary.withOpacity(0.4), size: 22)
+                    color: AppTheme.primary.withValues(alpha: 0.4), size: 22)
                 : null,
           ),
           const SizedBox(width: 14),
@@ -422,8 +422,8 @@ class _StockFormState extends State<_StockForm> {
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: product.isLowStock
-                      ? AppTheme.error.withOpacity(0.1)
-                      : AppTheme.success.withOpacity(0.1),
+                      ? AppTheme.error.withValues(alpha: 0.1)
+                      : AppTheme.success.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -504,8 +504,8 @@ class _StockFormState extends State<_StockForm> {
                     height: 36,
                     decoration: BoxDecoration(
                       color: tx.type == 'IN'
-                          ? AppTheme.success.withOpacity(0.1)
-                          : AppTheme.warning.withOpacity(0.1),
+                          ? AppTheme.success.withValues(alpha: 0.1)
+                          : AppTheme.warning.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(

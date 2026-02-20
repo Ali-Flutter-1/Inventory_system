@@ -167,6 +167,55 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                        'By signing up you agree to our ',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: const Color(0xFF64748B),
+                            ),
+                      ),
+                      GestureDetector(
+                        onTap: () => Navigator.pushNamed(context, AppRouter.terms),
+                        child: Text(
+                          t('termsOfService'),
+                          style: const TextStyle(
+                            color: AppTheme.primary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        ' and ',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: const Color(0xFF64748B),
+                            ),
+                      ),
+                      GestureDetector(
+                        onTap: () => Navigator.pushNamed(context, AppRouter.privacy),
+                        child: Text(
+                          t('privacyPolicy'),
+                          style: const TextStyle(
+                            color: AppTheme.primary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: const Color(0xFF64748B),
+                            ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 16),
                   TextButton(
                     onPressed: () {

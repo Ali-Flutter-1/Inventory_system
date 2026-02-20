@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../features/splash/splash_screen.dart';
+import '../../features/auth/screens/forgot_password_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/signup_screen.dart';
 import '../../features/dashboard/dashboard_screen.dart';
@@ -17,12 +18,15 @@ import '../../features/settings/screens/change_password_screen.dart';
 import '../../features/settings/screens/company_screen.dart';
 import '../../features/settings/screens/notifications_screen.dart';
 import '../../features/settings/screens/subscription_screen.dart';
+import '../../features/legal/terms_screen.dart';
+import '../../features/legal/privacy_screen.dart';
 
 class AppRouter {
   AppRouter._();
 
   static const String splash = '/splash';
   static const String login = '/login';
+  static const String forgotPassword = '/forgot-password';
   static const String signUp = '/signup';
   static const String dashboard = '/';
   static const String products = '/products';
@@ -39,6 +43,8 @@ class AppRouter {
   static const String settingsNotifications = '/settings/notifications';
   static const String settingsAccount = '/settings/account';
   static const String settingsChangePassword = '/settings/change-password';
+  static const String terms = '/terms';
+  static const String privacy = '/privacy';
 
   static Route<dynamic>? onGenerateRoute(RouteSettings routeSettings) {
     switch (routeSettings.name) {
@@ -46,6 +52,8 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const SplashScreen());
       case login:
         return MaterialPageRoute(builder: (_) => const LoginScreen());
+      case forgotPassword:
+        return MaterialPageRoute(builder: (_) => const ForgotPasswordScreen());
       case signUp:
         return MaterialPageRoute(builder: (_) => const SignUpScreen());
       case dashboard:
@@ -93,6 +101,10 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const AccountScreen());
       case settingsChangePassword:
         return MaterialPageRoute(builder: (_) => const ChangePasswordScreen());
+      case terms:
+        return MaterialPageRoute(builder: (_) => const TermsScreen());
+      case privacy:
+        return MaterialPageRoute(builder: (_) => const PrivacyScreen());
       default:
         return MaterialPageRoute(builder: (_) => const SplashScreen());
     }

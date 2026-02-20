@@ -77,6 +77,20 @@ class SettingsScreen extends StatelessWidget {
             subtitle: 'Email • Change password',
             onTap: () => Navigator.pushNamed(context, AppRouter.settingsAccount),
           ),
+          const SizedBox(height: 10),
+          _SectionHeader(title: t('legal')),
+          _SettingsTile(
+            icon: Icons.description_rounded,
+            title: t('termsOfService'),
+            subtitle: t('termsOfService'),
+            onTap: () => Navigator.pushNamed(context, AppRouter.terms),
+          ),
+          _SettingsTile(
+            icon: Icons.privacy_tip_rounded,
+            title: t('privacyPolicy'),
+            subtitle: t('privacyPolicy'),
+            onTap: () => Navigator.pushNamed(context, AppRouter.privacy),
+          ),
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),

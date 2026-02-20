@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/l10n/app_localizations.dart';
@@ -30,12 +33,202 @@ class _ReportsScreenState extends State<ReportsScreen>
     super.dispose();
   }
 
+  Future<void> _exportPdf(BuildContext context, String Function(String) t) async {
+    final productProvider = context.read<ProductProvider>();
+    final expenseProvider = context.read<ExpenseProvider>();
+    final isStockReport = _tabController.index == 0;
+    final dateStr = _formatPdfDate(DateTime.now());
+
+    final pdf = pw.Document();
+    if (isStockReport) {
+      final products = productProvider.products;
+      final totalValue = products.fold<double>(
+          0, (sum, p) => sum + (p.stock * p.purchasePrice));
+      final lowCount = products.where((p) => p.isLowStock).length;
+
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(24),
+          header: (ctx) => pw.Padding(
+            padding: const pw.EdgeInsets.only(bottom: 12),
+            child: pw.Text(
+              t('stockReport'),
+              style: pw.TextStyle(
+                fontSize: 16,
+                fontWeight: pw.FontWeight.bold,
+              ),
+            ),
+          ),
+          footer: (ctx) => pw.Padding(
+            padding: const pw.EdgeInsets.only(top: 12),
+            child: pw.Text(
+              '${t('reportGeneratedOn')} $dateStr • Page ${ctx.pageNumber}/${ctx.pagesCount}',
+              style: const pw.TextStyle(fontSize: 8),
+            ),
+          ),
+          build: (ctx) => [
+            pw.Text('${t('reportGeneratedOn')} $dateStr',
+                style: const pw.TextStyle(fontSize: 10)),
+            pw.SizedBox(height: 16),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text('${t('stockValue')}: ${totalValue.toStringAsFixed(2)}',
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                pw.Text('${t('lowStock')}: $lowCount'),
+              ],
+            ),
+            pw.SizedBox(height: 20),
+            if (products.isEmpty)
+              pw.Text(t('noProductsYet'))
+            else
+              pw.Table(
+                border: pw.TableBorder.all(width: 0.5),
+                columnWidths: {
+                  0: const pw.FlexColumnWidth(2.5),
+                  1: const pw.FlexColumnWidth(1.5),
+                  2: const pw.FlexColumnWidth(1),
+                  3: const pw.FlexColumnWidth(1),
+                  4: const pw.FlexColumnWidth(1.2),
+                },
+                children: [
+                  pw.TableRow(
+                    decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+                    children: [
+                      _cell(t('products'), bold: true),
+                      _cell(t('sku'), bold: true),
+                      _cell(t('currentStock'), bold: true),
+                      _cell(t('purchasePrice'), bold: true),
+                      _cell(t('stockValue'), bold: true),
+                    ],
+                  ),
+                  ...products.map((p) {
+                    final value = p.stock * p.purchasePrice;
+                    return pw.TableRow(
+                      children: [
+                        _cell(p.name),
+                        _cell(p.sku ?? '—'),
+                        _cell('${p.stock}'),
+                        _cell(p.purchasePrice.toStringAsFixed(2)),
+                        _cell(value.toStringAsFixed(2)),
+                      ],
+                    );
+                  }),
+                ],
+              ),
+            ],
+          ),
+
+      );
+    } else {
+      final expenses = expenseProvider.expenses;
+      final total = expenseProvider.totalExpenses;
+
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(24),
+          header: (ctx) => pw.Padding(
+            padding: const pw.EdgeInsets.only(bottom: 12),
+            child: pw.Text(
+              t('expenseReport'),
+              style: pw.TextStyle(
+                fontSize: 16,
+                fontWeight: pw.FontWeight.bold,
+              ),
+            ),
+          ),
+          footer: (ctx) => pw.Padding(
+            padding: const pw.EdgeInsets.only(top: 12),
+            child: pw.Text(
+              '${t('reportGeneratedOn')} $dateStr • Page ${ctx.pageNumber}/${ctx.pagesCount}',
+              style: const pw.TextStyle(fontSize: 8),
+            ),
+          ),
+          build: (ctx) => [
+            pw.Text('${t('reportGeneratedOn')} $dateStr',
+                style: const pw.TextStyle(fontSize: 10)),
+            pw.SizedBox(height: 16),
+            pw.Text(
+              '${t('monthExpenses')}: ${total.toStringAsFixed(2)}',
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 20),
+            if (expenses.isEmpty)
+              pw.Text(t('noExpensesYet'))
+            else
+              pw.Table(
+                border: pw.TableBorder.all(width: 0.5),
+                columnWidths: {
+                  0: const pw.FlexColumnWidth(1),
+                  1: const pw.FlexColumnWidth(2.5),
+                  2: const pw.FlexColumnWidth(1.2),
+                  3: const pw.FlexColumnWidth(0.8),
+                },
+                children: [
+                  pw.TableRow(
+                    decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+                    children: [
+                      _cell(t('date'), bold: true),
+                      _cell(t('description'), bold: true),
+                      _cell(t('amount'), bold: true),
+                      _cell(t('category'), bold: true),
+                    ],
+                  ),
+                  ...expenses.take(100).map((e) => pw.TableRow(
+                        children: [
+                          _cell('${e.date.day}/${e.date.month}/${e.date.year}'),
+                          _cell(e.description),
+                          _cell('${e.amount.toStringAsFixed(2)} ${e.currency}'),
+                          _cell(e.category ?? '—'),
+                        ],
+                      )),
+                ],
+              ),
+            ],
+          ),
+
+      );
+    }
+
+    final bytes = await pdf.save();
+    final filename = isStockReport ? 'stock-report.pdf' : 'expense-report.pdf';
+    if (context.mounted) {
+      await Printing.sharePdf(bytes: bytes, filename: filename);
+    }
+  }
+
+  static String _formatPdfDate(DateTime d) {
+    return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+  }
+
+  static pw.Widget _cell(String text, {bool bold = false}) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.all(6),
+      child: pw.Text(
+        text,
+        style: pw.TextStyle(
+          fontSize: 9,
+          fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = (String key) => AppLocalizations.tr(context, key);
 
     return AppScaffold(
       title: t('reports'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.picture_as_pdf_rounded),
+          onPressed: () => _exportPdf(context, t),
+          tooltip: t('exportPdf'),
+        ),
+      ],
       body: Column(
         children: [
           // ── Custom Tab Bar ──

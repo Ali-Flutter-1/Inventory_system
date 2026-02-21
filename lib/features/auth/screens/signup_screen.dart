@@ -35,7 +35,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (!_formKey.currentState!.validate()) return;
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passwords do not match')),
+        SnackBar(
+          content: Text(AppLocalizations.tr(context, 'passwordsDoNotMatch')),
+        ),
       );
       return;
     }
@@ -52,7 +54,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('$e')));
+          SnackBar(content: Text('$e')),
+        );
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -62,170 +65,190 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     String t(String key) => AppLocalizations.tr(context, key);
+    final theme = Theme.of(context);
 
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppTheme.primaryContainer,
-              Colors.white,
-            ],
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          onPressed: () => Navigator.pushReplacementNamed(
+              context, AppRouter.login),
+          color: theme.colorScheme.onSurface,
+        ),
+        title: Text(
+          t('signUp'),
+          style: TextStyle(
+            color: theme.colorScheme.onSurface,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
           ),
         ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 16),
-                  AppBar(
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                    title: Text(
-                      t('signUp'),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        color: Color(0xFF1E293B),
+        centerTitle: true,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 24),
+                AppTextField(
+                  controller: _nameController,
+                  label: t('name'),
+                  validator: (v) =>
+                      v == null || v.isEmpty ? t('enterName') : null,
+                ),
+                const SizedBox(height: 16),
+                AppTextField(
+                  controller: _emailController,
+                  label: t('email'),
+                  hint: 'you@example.com',
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (v) =>
+                      v == null || v.isEmpty ? t('enterEmail') : null,
+                ),
+                const SizedBox(height: 16),
+                AppTextField(
+                  controller: _passwordController,
+                  label: t('password'),
+                  obscureText: true,
+                  validator: (v) => v == null || v.length < 6
+                      ? t('passwordMinLength')
+                      : null,
+                ),
+                const SizedBox(height: 16),
+                AppTextField(
+                  controller: _confirmPasswordController,
+                  label: t('confirmPassword'),
+                  obscureText: true,
+                  validator: (v) =>
+                      v == null || v.isEmpty ? t('enterConfirmPassword') : null,
+                ),
+                const SizedBox(height: 24),
+                AppButton(
+                  label: t('signUp'),
+                  onPressed: _submit,
+                  loading: _loading,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: theme.dividerColor)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'or',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: const Color(0xFF94A3B8),
+                        ),
                       ),
                     ),
+                    Expanded(child: Divider(color: theme.dividerColor)),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                OutlinedButton.icon(
+                  onPressed: _loading
+                      ? null
+                      : () async {
+                          setState(() => _loading = true);
+                          await context
+                              .read<AuthProvider>()
+                              .signInWithGoogle();
+                          if (mounted) {
+                            Navigator.pushReplacementNamed(
+                                context, AppRouter.dashboard);
+                          }
+                          if (mounted) setState(() => _loading = false);
+                        },
+                  icon: const Icon(Icons.g_mobiledata, size: 20),
+                  label: Text(t('signUpWithGoogle')),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                    side: BorderSide(color: theme.dividerColor),
                   ),
-                  const SizedBox(height: 16),
-                  Material(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    elevation: 0,
-                    shadowColor: Colors.black.withValues(alpha: 0.08),
-                    child: Padding(
-                      padding: const EdgeInsets.all(18),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          AppTextField(
-                            controller: _nameController,
-                            label: t('name'),
-                            validator: (v) =>
-                                v == null || v.isEmpty ? 'Enter name' : null,
-                          ),
-                          const SizedBox(height: 14),
-                          AppTextField(
-                            controller: _emailController,
-                            label: t('email'),
-                            keyboardType: TextInputType.emailAddress,
-                            validator: (v) =>
-                                v == null || v.isEmpty ? 'Enter email' : null,
-                          ),
-                          const SizedBox(height: 14),
-                          AppTextField(
-                            controller: _passwordController,
-                            label: t('password'),
-                            obscureText: true,
-                            validator: (v) => v == null || v.length < 6
-                                ? 'Min 6 characters'
-                                : null,
-                          ),
-                          const SizedBox(height: 14),
-                          AppTextField(
-                            controller: _confirmPasswordController,
-                            label: t('confirmPassword'),
-                            obscureText: true,
-                          ),
-                          const SizedBox(height: 18),
-                          AppButton(
-                            label: t('signUp'),
-                            onPressed: _submit,
-                            loading: _loading,
-                          ),
-                          const SizedBox(height: 12),
-                          OutlinedButton.icon(
-                            onPressed: () async {
-                              setState(() => _loading = true);
-                              await context
-                                  .read<AuthProvider>()
-                                  .signInWithGoogle();
-                              if (mounted) {
-                                Navigator.pushReplacementNamed(
-                                    context, AppRouter.dashboard);
-                              }
-                              if (mounted) setState(() => _loading = false);
-                            },
-                            icon: const Icon(Icons.g_mobiledata, size: 20),
-                            label: Text(t('signUpWithGoogle')),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size(double.infinity, 44),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
+                ),
+                const SizedBox(height: 24),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Wrap(
                     alignment: WrapAlignment.center,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
                         'By signing up you agree to our ',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: const Color(0xFF64748B),
-                            ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: const Color(0xFF64748B),
+                        ),
                       ),
                       GestureDetector(
-                        onTap: () => Navigator.pushNamed(context, AppRouter.terms),
+                        onTap: () =>
+                            Navigator.pushNamed(context, AppRouter.terms),
                         child: Text(
                           t('termsOfService'),
                           style: const TextStyle(
                             color: AppTheme.primary,
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
-                            decoration: TextDecoration.underline,
                           ),
                         ),
                       ),
                       Text(
                         ' and ',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: const Color(0xFF64748B),
-                            ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: const Color(0xFF64748B),
+                        ),
                       ),
                       GestureDetector(
-                        onTap: () => Navigator.pushNamed(context, AppRouter.privacy),
+                        onTap: () =>
+                            Navigator.pushNamed(context, AppRouter.privacy),
                         child: Text(
                           t('privacyPolicy'),
                           style: const TextStyle(
                             color: AppTheme.primary,
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
-                            decoration: TextDecoration.underline,
                           ),
                         ),
                       ),
                       Text(
                         '.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: const Color(0xFF64748B),
-                            ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: const Color(0xFF64748B),
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushReplacementNamed(context, AppRouter.login);
-                    },
-                    child: Text(t('hasAccount')),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      t('hasAccountPrompt'),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFF64748B),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pushReplacementNamed(
+                          context, AppRouter.login),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppTheme.primary,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                      child: Text(t('login')),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+              ],
             ),
           ),
         ),

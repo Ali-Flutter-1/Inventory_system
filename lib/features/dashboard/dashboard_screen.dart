@@ -39,6 +39,7 @@ class DashboardScreen extends StatelessWidget {
       0,
       (sum, p) => sum + (p.purchasePrice * p.stock),
     );
+    final totalProfit = transactionProvider.totalProfit;
     final monthExpenses = expenseProvider.totalExpenses;
     final recentTransactions =
         transactionProvider.transactions.take(8).toList();
@@ -180,6 +181,20 @@ class DashboardScreen extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 12),
+              _DashboardStatCard(
+                title: t('totalProfit'),
+                value: totalProfit != 0
+                    ? (totalProfit >= 0
+                        ? '\$${totalProfit.toStringAsFixed(2)}'
+                        : '-\$${totalProfit.abs().toStringAsFixed(2)}')
+                    : '—',
+                icon: totalProfit >= 0
+                    ? Icons.trending_up_rounded
+                    : Icons.trending_down_rounded,
+                color: totalProfit >= 0 ? AppTheme.success : AppTheme.error,
+                onTap: null,
               ),
               const SizedBox(height: 24),
 

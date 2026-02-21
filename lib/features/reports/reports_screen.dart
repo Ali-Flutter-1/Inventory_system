@@ -109,7 +109,7 @@ class _ReportsScreenState extends State<ReportsScreen>
                       children: [
                         _cell(p.name),
                         _cell(p.sku ?? '—'),
-                        _cell('${p.stock}'),
+                        _cell(p.stockWithUnit()),
                         _cell(p.purchasePrice.toStringAsFixed(2)),
                         _cell(value.toStringAsFixed(2)),
                       ],
@@ -404,7 +404,7 @@ class _StockReportView extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          '${t('stock')}: ${product.stock}',
+                          product.stockWithUnit(),
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: product.isLowStock

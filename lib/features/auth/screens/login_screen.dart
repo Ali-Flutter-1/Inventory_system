@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/l10n/app_localizations.dart';
@@ -49,135 +50,194 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  static const String _appName = 'BizInventory';
+  static const String _appSlogan = 'Your business. Your stock. One app.';
+
   @override
   Widget build(BuildContext context) {
     String t(String key) => AppLocalizations.tr(context, key);
+    final theme = Theme.of(context);
+    final auth = context.watch<AuthProvider>();
+    final displayName = (auth.companyName != null && auth.companyName!.isNotEmpty)
+        ? auth.companyName!
+        : _appName;
+    final displaySlogan = (auth.companySlogan != null && auth.companySlogan!.isNotEmpty)
+        ? auth.companySlogan!
+        : _appSlogan;
+    final hasLogo = auth.companyLogo != null &&
+        auth.companyLogo!.isNotEmpty &&
+        File(auth.companyLogo!).existsSync();
 
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppTheme.primaryContainer,
-              Colors.white,
-            ],
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        automaticallyImplyLeading: false,
+        title: Text(
+          displayName,
+          style: TextStyle(
+            color: theme.colorScheme.onSurface,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
           ),
         ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 32),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primary.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.inventory_2_rounded,
-                      size: 44,
-                      color: AppTheme.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    t('appName'),
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
+        centerTitle: true,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 24),
+                Center(
+                  child: Column(
+                    children: [
+                      if (hasLogo)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.file(
+                            File(auth.companyLogo!),
+                            width: 72,
+                            height: 72,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      else
+                        Icon(
+                          Icons.inventory_2_rounded,
+                          size: 48,
+                          color: AppTheme.primary,
+                        ),
+                      const SizedBox(height: 12),
+                      Text(
+                        displayName,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
                           color: const Color(0xFF1E293B),
                         ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    t('login'),
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        displaySlogan,
+                        style: theme.textTheme.bodySmall?.copyWith(
                           color: const Color(0xFF64748B),
                         ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 28),
-                  Material(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    elevation: 0,
-                    shadowColor: Colors.black.withValues(alpha: 0.08),
-                    child: Padding(
-                      padding: const EdgeInsets.all(18),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          AppTextField(
-                            controller: _emailController,
-                            label: t('email'),
-                            hint: 'you@example.com',
-                            keyboardType: TextInputType.emailAddress,
-                            validator: (v) =>
-                                v == null || v.isEmpty ? 'Enter email' : null,
-                          ),
-                          const SizedBox(height: 14),
-                          AppTextField(
-                            controller: _passwordController,
-                            label: t('password'),
-                            obscureText: true,
-                            validator: (v) =>
-                                v == null || v.isEmpty ? 'Enter password' : null,
-                          ),
-                          const SizedBox(height: 8),
-                          Align(
-                            alignment: AlignmentDirectional.centerEnd,
-                            child: TextButton(
-                              onPressed: () => Navigator.pushNamed(
-                                  context, AppRouter.forgotPassword),
-                              child: Text(t('forgotPassword')),
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                          AppButton(
-                            label: t('login'),
-                            onPressed: _submit,
-                            loading: _loading,
-                          ),
-                          const SizedBox(height: 12),
-                          OutlinedButton.icon(
-                            onPressed: () async {
-                              setState(() => _loading = true);
-                              await context.read<AuthProvider>().signInWithGoogle();
-                              if (mounted) {
-                                Navigator.pushReplacementNamed(
-                                    context, AppRouter.dashboard);
-                              }
-                              if (mounted) setState(() => _loading = false);
-                            },
-                            icon: const Icon(Icons.g_mobiledata, size: 20),
-                            label: Text(t('signInWithGoogle')),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size(double.infinity, 44),
-                            ),
-                          ),
-                        ],
+                ),
+                const SizedBox(height: 28),
+                Text(
+                  t('login'),
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF1E293B),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                AppTextField(
+                  controller: _emailController,
+                  label: t('email'),
+                  hint: 'you@example.com',
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (v) =>
+                      v == null || v.isEmpty ? t('enterEmail') : null,
+                ),
+                const SizedBox(height: 16),
+                AppTextField(
+                  controller: _passwordController,
+                  label: t('password'),
+                  obscureText: true,
+                  validator: (v) =>
+                      v == null || v.isEmpty ? t('enterPassword') : null,
+                ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: TextButton(
+                    onPressed: () =>
+                        Navigator.pushNamed(context, AppRouter.forgotPassword),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppTheme.primary,
+                      padding: const EdgeInsets.symmetric(horizontal: 0),
+                    ),
+                    child: Text(t('forgotPassword')),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                AppButton(
+                  label: t('login'),
+                  onPressed: _submit,
+                  loading: _loading,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: theme.dividerColor)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'or',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: const Color(0xFF94A3B8),
+                        ),
                       ),
                     ),
+                    Expanded(child: Divider(color: theme.dividerColor)),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                OutlinedButton.icon(
+                  onPressed: _loading
+                      ? null
+                      : () async {
+                          setState(() => _loading = true);
+                          await context
+                              .read<AuthProvider>()
+                              .signInWithGoogle();
+                          if (mounted) {
+                            Navigator.pushReplacementNamed(
+                                context, AppRouter.dashboard);
+                          }
+                          if (mounted) setState(() => _loading = false);
+                        },
+                  icon: const Icon(Icons.g_mobiledata, size: 20),
+                  label: Text(t('signInWithGoogle')),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                    side: BorderSide(color: theme.dividerColor),
                   ),
-                  const SizedBox(height: 20),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushReplacementNamed(context, AppRouter.signUp);
-                    },
-                    child: Text(t('noAccount')),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ),
+                ),
+                const SizedBox(height: 32),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      t('noAccountPrompt'),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFF64748B),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pushReplacementNamed(
+                          context, AppRouter.signUp),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppTheme.primary,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                      child: Text(t('signUp')),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+              ],
             ),
           ),
         ),

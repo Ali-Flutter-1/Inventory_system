@@ -13,6 +13,8 @@ class AuthProvider with ChangeNotifier {
   String? get companyId => _companyId;
   String? _companyName = 'Demo Company';
   String? get companyName => _companyName;
+  String? _companySlogan;
+  String? get companySlogan => _companySlogan;
   String? _currency = 'USD';
   String? get currency => _currency;
   String? _companyLogo;
@@ -61,9 +63,10 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void updateProfile({String? name, String? companyName, String? currency, String? logoPath}) {
+  void updateProfile({String? name, String? companyName, String? companySlogan, String? currency, String? logoPath}) {
     if (name != null) _userName = name;
     if (companyName != null) _companyName = companyName;
+    if (companySlogan != null) _companySlogan = companySlogan;
     if (currency != null) _currency = currency;
     if (logoPath != null) _companyLogo = logoPath;
     notifyListeners();

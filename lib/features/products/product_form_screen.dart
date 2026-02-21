@@ -35,7 +35,10 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   
   // State
   String? _imagePath;
+  String _unit = 'pcs';
   final ImagePicker _picker = ImagePicker();
+
+  static const List<String> _units = ['pcs', 'kg', 'L', 'box', 'm', 'g', 'ml'];
 
   @override
   void initState() {
@@ -46,6 +49,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     _sellingPriceController = TextEditingController(text: '0');
     _stockController = TextEditingController(text: '0');
     _lowStockLimitController = TextEditingController(text: '0');
+    _unit = 'pcs';
     _descriptionController = TextEditingController();
     _categoryController = TextEditingController();
   }
@@ -66,6 +70,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         _categoryController.text = p.category ?? '';
         setState(() {
           _imagePath = p.imagePath;
+          _unit = p.unit;
         });
       }
     }
@@ -116,8 +121,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       sku: _skuController.text.trim().isEmpty ? null : _skuController.text.trim(),
       purchasePrice: double.tryParse(_purchasePriceController.text) ?? 0,
       sellingPrice: double.tryParse(_sellingPriceController.text) ?? 0,
-      stock: int.tryParse(_stockController.text) ?? 0,
-      lowStockLimit: int.tryParse(_lowStockLimitController.text) ?? 0,
+      stock: double.tryParse(_stockController.text) ?? 0,
+      lowStockLimit: double.tryParse(_lowStockLimitController.text) ?? 0,
+      unit: _unit,
       imagePath: _imagePath,
       description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
       category: _categoryController.text.trim().isEmpty ? null : _categoryController.text.trim(),
@@ -209,8 +215,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   Expanded(
                     child: AppTextField(
                       controller: _purchasePriceController,
-                      label: t('purchasePrice'),
-                      keyboardType: TextInputType.number,
+                      label: '${t('purchasePrice')} (${t('averageCost')})',
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       prefixIcon: const Icon(Icons.attach_money),
                     ),
                   ),
@@ -219,7 +225,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                     child: AppTextField(
                       controller: _sellingPriceController,
                       label: t('sellingPrice'),
-                      keyboardType: TextInputType.number,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       prefixIcon: const Icon(Icons.sell_outlined),
                     ),
                   ),
@@ -235,20 +241,33 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                     child: AppTextField(
                       controller: _stockController,
                       label: t('currentStock'),
-                      keyboardType: TextInputType.number,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       prefixIcon: const Icon(Icons.warehouse_outlined),
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: AppTextField(
-                      controller: _lowStockLimitController,
-                      label: t('lowStockLimit'),
-                      keyboardType: TextInputType.number,
-                      prefixIcon: const Icon(Icons.warning_amber_rounded),
+                    flex: 1,
+                    child: DropdownButtonFormField<String>(
+                      value: _unit,
+                      decoration: InputDecoration(
+                        labelText: t('unit'),
+                        prefixIcon: const Icon(Icons.straighten),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                      items: _units.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
+                      onChanged: (v) => setState(() => _unit = v ?? 'pcs'),
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 16),
+              AppTextField(
+                controller: _lowStockLimitController,
+                label: t('lowStockLimit'),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                prefixIcon: const Icon(Icons.warning_amber_rounded),
               ),
               
               const SizedBox(height: 32),

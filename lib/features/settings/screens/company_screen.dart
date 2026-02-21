@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/l10n/app_localizations.dart';
@@ -9,6 +10,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_scaffold.dart';
 import '../../../core/widgets/app_text_field.dart';
+import '../../../state/auth_provider.dart';
 
 class CompanyScreen extends StatefulWidget {
   const CompanyScreen({super.key});
@@ -19,7 +21,8 @@ class CompanyScreen extends StatefulWidget {
 
 class _CompanyScreenState extends State<CompanyScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _companyNameController = TextEditingController(text: 'My Company');
+  late final TextEditingController _companyNameController;
+  late final TextEditingController _sloganController;
   final _addressController = TextEditingController();
   final _cityController = TextEditingController();
   final _stateProvinceController = TextEditingController();
@@ -33,10 +36,36 @@ class _CompanyScreenState extends State<CompanyScreen> {
   String _selectedCurrency = AppConstants.supportedCurrencyCodes.first;
   String? _logoPath;
   final ImagePicker _picker = ImagePicker();
+  bool _loadedFromAuth = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _companyNameController = TextEditingController(text: 'My Company');
+    _sloganController = TextEditingController();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_loadedFromAuth) return;
+    _loadedFromAuth = true;
+    final auth = context.read<AuthProvider>();
+    if (auth.companyName != null && auth.companyName!.isNotEmpty) {
+      _companyNameController.text = auth.companyName!;
+    }
+    if (auth.companySlogan != null && auth.companySlogan!.isNotEmpty) {
+      _sloganController.text = auth.companySlogan!;
+    }
+    if (auth.companyLogo != null && auth.companyLogo!.isNotEmpty) {
+      setState(() => _logoPath = auth.companyLogo);
+    }
+  }
 
   @override
   void dispose() {
     _companyNameController.dispose();
+    _sloganController.dispose();
     _addressController.dispose();
     _cityController.dispose();
     _stateProvinceController.dispose();
@@ -104,9 +133,14 @@ class _CompanyScreenState extends State<CompanyScreen> {
 
   void _save() {
     if (!_formKey.currentState!.validate()) return;
+    context.read<AuthProvider>().updateProfile(
+      companyName: _companyNameController.text.trim(),
+      companySlogan: _sloganController.text.trim().isEmpty ? null : _sloganController.text.trim(),
+      logoPath: _logoPath,
+    );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${AppLocalizations.tr(context, 'save')} – TODO: persist'),
+        content: Text(AppLocalizations.tr(context, 'save')),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -198,6 +232,7 @@ class _CompanyScreenState extends State<CompanyScreen> {
                       Text(
                         _logoPath != null ? t('changeLogo') : t('addLogo'),
                         style: theme.textTheme.bodySmall?.copyWith(
+
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
@@ -208,6 +243,13 @@ class _CompanyScreenState extends State<CompanyScreen> {
                         hint: 'Acme Inc.',
                         validator: (v) =>
                             v == null || v.isEmpty ? '${t('companyName')} (required)' : null,
+                      ),
+                      const SizedBox(height: 14),
+                      AppTextField(
+                        controller: _sloganController,
+                        label: t('slogan'),
+                        hint: 'Your business. Your stock. One app.',
+                        maxLines: 2,
                       ),
                     ],
                   ),

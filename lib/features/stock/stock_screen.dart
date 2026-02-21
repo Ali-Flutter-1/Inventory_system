@@ -121,6 +121,8 @@ class _StockForm extends StatefulWidget {
 
 class _StockFormState extends State<_StockForm> {
   final _quantityController = TextEditingController(text: '1');
+  final _unitPriceController = TextEditingController();
+  final _sellingPriceController = TextEditingController();
   final _referenceController = TextEditingController();
   final _notesController = TextEditingController();
   String? _selectedProductId;
@@ -128,6 +130,8 @@ class _StockFormState extends State<_StockForm> {
   @override
   void dispose() {
     _quantityController.dispose();
+    _unitPriceController.dispose();
+    _sellingPriceController.dispose();
     _referenceController.dispose();
     _notesController.dispose();
     super.dispose();
@@ -140,7 +144,7 @@ class _StockFormState extends State<_StockForm> {
       );
       return;
     }
-    final qty = int.tryParse(_quantityController.text) ?? 0;
+    final qty = double.tryParse(_quantityController.text.replaceAll(',', '.')) ?? 0;
     if (qty <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Enter quantity')),
@@ -156,16 +160,45 @@ class _StockFormState extends State<_StockForm> {
       );
       return;
     }
-    final newStock =
-        widget.type == 'IN' ? product.stock + qty : product.stock - qty;
+
+    double newStock;
+    double newAveragePurchasePrice = product.purchasePrice;
+    double? transactionUnitPrice;
+
+    if (widget.type == 'IN') {
+      final unitPrice = double.tryParse(_unitPriceController.text.replaceAll(',', '.')) ?? 0;
+      if (unitPrice < 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Enter a valid unit price')),
+        );
+        return;
+      }
+      transactionUnitPrice = unitPrice;
+      newStock = product.stock + qty;
+      // Weighted average: (currentValue + incomingValue) / (currentQty + incomingQty)
+      if (newStock > 0) {
+        final currentValue = product.stock * product.purchasePrice;
+        final incomingValue = qty * unitPrice;
+        newAveragePurchasePrice = (currentValue + incomingValue) / newStock;
+      }
+    } else {
+      newStock = product.stock - qty;
+      transactionUnitPrice = product.purchasePrice; // cost for reporting
+    }
+
+    final unitSellingPriceOut = widget.type == 'OUT'
+        ? (double.tryParse(_sellingPriceController.text.replaceAll(',', '.')))
+        : null;
+
     productProvider.updateProduct(ProductModel(
       id: product.id,
       name: product.name,
       sku: product.sku,
-      purchasePrice: product.purchasePrice,
+      purchasePrice: newAveragePurchasePrice,
       sellingPrice: product.sellingPrice,
       stock: newStock,
       lowStockLimit: product.lowStockLimit,
+      unit: product.unit,
       imagePath: product.imagePath,
       description: product.description,
       category: product.category,
@@ -176,6 +209,8 @@ class _StockFormState extends State<_StockForm> {
           productName: product.name,
           type: widget.type,
           quantity: qty,
+          unitPrice: transactionUnitPrice,
+          unitSellingPrice: widget.type == 'OUT' ? unitSellingPriceOut : null,
           reference: _referenceController.text.isEmpty
               ? null
               : _referenceController.text,
@@ -187,6 +222,8 @@ class _StockFormState extends State<_StockForm> {
 
     // Reset
     _quantityController.text = '1';
+    _unitPriceController.clear();
+    _sellingPriceController.clear();
     _referenceController.clear();
     _notesController.clear();
     _selectedProductId = null;
@@ -262,10 +299,25 @@ class _StockFormState extends State<_StockForm> {
             items: products
                 .map((p) => DropdownMenuItem(
                       value: p.id,
-                      child: Text('${p.name} (${p.stock})'),
+                      child: Text('${p.name} (${p.stockWithUnit()})'),
                     ))
                 .toList(),
-            onChanged: (v) => setState(() => _selectedProductId = v),
+            onChanged: (v) {
+              setState(() {
+                _selectedProductId = v;
+                if (v != null) {
+                  final p = context.read<ProductProvider>().getById(v);
+                  if (p != null) {
+                    if (isIn && _unitPriceController.text.isEmpty) {
+                      _unitPriceController.text = p.purchasePrice.toString();
+                    }
+                    if (!isIn) {
+                      _sellingPriceController.text = p.sellingPrice.toString();
+                    }
+                  }
+                }
+              });
+            },
           ),
 
           // ── Product Info Card ──
@@ -281,33 +333,51 @@ class _StockFormState extends State<_StockForm> {
           const SizedBox(height: 12),
           Row(
             children: [
-              // Quick buttons
               _buildQuickQtyButton('-', () {
                 final current =
-                    int.tryParse(_quantityController.text) ?? 1;
-                if (current > 1) {
-                  setState(() => _quantityController.text =
-                      (current - 1).toString());
+                    double.tryParse(_quantityController.text.replaceAll(',', '.')) ?? 1;
+                if (current > 0.5) {
+                  final next = current >= 2 ? (current - 1) : (current - 0.5).clamp(0.5, double.infinity);
+                  setState(() => _quantityController.text = next == next.truncateToDouble() ? next.toInt().toString() : next.toStringAsFixed(1));
                 }
               }),
               const SizedBox(width: 12),
               Expanded(
                 child: AppTextField(
                   controller: _quantityController,
-                  label: t('quantity'),
-                  keyboardType: TextInputType.number,
+                  label: selectedProduct != null ? '${t('quantity')} (${selectedProduct!.unit})' : t('quantity'),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   prefixIcon: const Icon(Icons.numbers),
                 ),
               ),
               const SizedBox(width: 12),
               _buildQuickQtyButton('+', () {
                 final current =
-                    int.tryParse(_quantityController.text) ?? 0;
-                setState(() => _quantityController.text =
-                    (current + 1).toString());
+                    double.tryParse(_quantityController.text.replaceAll(',', '.')) ?? 0;
+                final next = current >= 1 ? (current + 1) : (current + 0.5);
+                setState(() => _quantityController.text = next == next.truncateToDouble() ? next.toInt().toString() : next.toStringAsFixed(1));
               }),
             ],
           ),
+
+          if (isIn) ...[
+            const SizedBox(height: 16),
+            AppTextField(
+              controller: _unitPriceController,
+              label: t('unitPrice'),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              prefixIcon: const Icon(Icons.attach_money),
+            ),
+          ],
+          if (!isIn && selectedProduct != null) ...[
+            const SizedBox(height: 16),
+            AppTextField(
+              controller: _sellingPriceController,
+              label: t('sellingPriceThisSale'),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              prefixIcon: const Icon(Icons.sell_outlined),
+            ),
+          ],
 
           const SizedBox(height: 24),
 
@@ -405,36 +475,23 @@ class _StockFormState extends State<_StockForm> {
               ],
             ),
           ),
-          // Stock info
+          // Stock & avg cost
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                t('currentStock'),
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(fontSize: 10),
+                product.stockWithUnit(),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color:
+                      product.isLowStock ? AppTheme.error : AppTheme.success,
+                ),
               ),
               const SizedBox(height: 2),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: product.isLowStock
-                      ? AppTheme.error.withValues(alpha: 0.1)
-                      : AppTheme.success.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '${product.stock}',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color:
-                        product.isLowStock ? AppTheme.error : AppTheme.success,
-                  ),
-                ),
+              Text(
+                '${t('averageCost')}: ${product.purchasePrice.toStringAsFixed(2)}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
               ),
             ],
           ),
@@ -538,7 +595,7 @@ class _StockFormState extends State<_StockForm> {
                     ),
                   ),
                   Text(
-                    '${tx.type == 'IN' ? '+' : '-'}${tx.quantity}',
+                    '${tx.type == 'IN' ? '+' : '-'}${tx.quantity == tx.quantity.truncateToDouble() ? tx.quantity.toInt() : tx.quantity.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,

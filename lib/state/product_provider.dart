@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 /// Simple product model for UI. Replace with Firestore when backend is ready.
+/// [purchasePrice] is the weighted average cost (updated on each stock IN).
 class ProductModel {
   ProductModel({
     required this.id,
@@ -10,6 +11,7 @@ class ProductModel {
     required this.sellingPrice,
     required this.stock,
     this.lowStockLimit = 0,
+    this.unit = 'pcs',
     this.imagePath,
     this.description,
     this.category,
@@ -18,15 +20,26 @@ class ProductModel {
   final String id;
   final String name;
   final String? sku;
+  /// Weighted average purchase cost (updated on stock IN).
   final double purchasePrice;
   final double sellingPrice;
-  final int stock;
-  final int lowStockLimit;
+  final double stock;
+  final double lowStockLimit;
+  /// Unit of measure: pcs, kg, L, box, m, etc.
+  final String unit;
   final String? imagePath;
   final String? description;
   final String? category;
 
   bool get isLowStock => lowStockLimit > 0 && stock <= lowStockLimit;
+
+  /// Display stock with unit (e.g. "5.5 kg", "10 pcs").
+  String stockWithUnit() {
+    if (stock == stock.truncateToDouble()) {
+      return '${stock.toInt()} $unit';
+    }
+    return '${stock.toStringAsFixed(2)} $unit';
+  }
 }
 
 class ProductProvider with ChangeNotifier {

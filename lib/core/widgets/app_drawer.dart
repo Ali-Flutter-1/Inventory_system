@@ -120,6 +120,27 @@ class AppDrawer extends StatelessWidget {
             ),
             onTap: () async {
               Navigator.pop(context);
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: Text(t('logOutConfirmTitle')),
+                  content: Text(t('logOutConfirmMessage')),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: Text(t('cancel')),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Theme.of(ctx).colorScheme.error,
+                      ),
+                      child: Text(t('logOut')),
+                    ),
+                  ],
+                ),
+              );
+              if (confirmed != true || !context.mounted) return;
               await context.read<AuthProvider>().signOut();
               if (context.mounted) {
                 Navigator.pushNamedAndRemoveUntil(

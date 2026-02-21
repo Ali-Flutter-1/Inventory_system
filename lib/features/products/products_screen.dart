@@ -5,7 +5,9 @@ import '../../../core/router/app_router.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_scaffold.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../state/product_provider.dart';
+import '../../../state/transaction_provider.dart';
 
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({super.key});
@@ -28,6 +30,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   Widget build(BuildContext context) {
     final t = (String key) => AppLocalizations.tr(context, key);
     final productProvider = context.watch<ProductProvider>();
+    final transactionProvider = context.watch<TransactionProvider>();
     var list = productProvider.products;
     if (_query.isNotEmpty) {
       list = list
@@ -77,6 +80,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     itemCount: list.length,
                     itemBuilder: (context, i) {
                 final p = list[i];
+                final profit = transactionProvider.profitForProduct(p.id);
                 return AppCard(
                   onTap: () => Navigator.pushNamed(
                     context,
@@ -113,7 +117,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    '${t('currentStock')}: ${p.stock}',
+                                    '${t('currentStock')}: ${p.stockWithUnit()}',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 12,
@@ -133,6 +137,18 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                 ),
                               ],
                             ),
+                            if (profit != 0) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                profit > 0
+                                    ? '${t('profit')}: ${profit.toStringAsFixed(2)}'
+                                    : '${t('loss')}: ${(-profit).toStringAsFixed(2)}',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: profit > 0 ? AppTheme.success : AppTheme.error,
+                                    ),
+                              ),
+                            ],
                           ],
                         ),
                       ),

@@ -12,11 +12,11 @@ class SettingsScreen extends StatelessWidget {
 
   static const Map<String, String> _languageNames = {
     'en': 'english',
-    'en_SG': 'singapore',
     'de': 'german',
     'es': 'spanish',
     'fr': 'french',
     'ar': 'arabic',
+    'zh': 'mandarin',
     'hi': 'hindi',
     'pt': 'portuguese',
     'it': 'italian',
@@ -121,6 +121,27 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
                 onTap: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: Text(t('logOutConfirmTitle')),
+                      content: Text(t('logOutConfirmMessage')),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: Text(t('cancel')),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Theme.of(ctx).colorScheme.error,
+                          ),
+                          child: Text(t('logOut')),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed != true || !context.mounted) return;
                   await context.read<AuthProvider>().signOut();
                   if (context.mounted) {
                     Navigator.pushNamedAndRemoveUntil(

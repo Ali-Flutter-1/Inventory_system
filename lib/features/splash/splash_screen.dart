@@ -20,7 +20,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _navigateNext() async {
-    await Future.delayed(const Duration(milliseconds: 2200));
+    await Future.delayed(const Duration(milliseconds: 2000));
     if (!mounted) return;
     final auth = context.read<AuthProvider>();
     final route =
@@ -31,66 +31,39 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppTheme.primary,
-              AppTheme.primaryDark,
-            ],
-          ),
-        ),
-        child: SafeArea(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Spacer(flex: 2),
-              Container(
-                padding: const EdgeInsets.all(22),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.inventory_2_rounded,
-                  size: 64,
-                  color: Colors.white,
-                ),
+              Icon(
+                Icons.inventory_2_rounded,
+                size: 56,
+                color: AppTheme.primary,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               Text(
-                'Inventory',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 24,
-                      letterSpacing: -0.5,
-                    ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Manage your stock with ease',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  fontSize: 13,
+                'BizInventory',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: const Color(0xFF1E293B),
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              const Spacer(flex: 2),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 36),
-                child: SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Colors.white.withValues(alpha: 0.8),
-                    ),
-                  ),
+              const SizedBox(height: 8),
+              Text(
+                'Your business. Your stock. One app.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+              const SizedBox(height: 48),
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary),
                 ),
               ),
             ],
